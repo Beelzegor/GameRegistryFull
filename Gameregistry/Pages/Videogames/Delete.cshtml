@@ -1,0 +1,38 @@
+@page
+@model Gameregistry.Pages.Videogames.DeleteModel
+
+@{
+    ViewData["Title"] = "Eliminar videojuego";
+}
+
+<h1>Eliminar videojuego</h1>
+
+<div class="detail-card">
+    <p class="mb-3">¿Seguro que querés eliminar <strong>@Model.Videogames.Name</strong>?</p>
+    <dl class="row mb-0">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Videogames.Publisher)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Videogames.Publisher)
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Videogames.Genre)
+        </dt>
+        <dd class="col-sm-9">
+            <span class="genre-badge">@Model.Videogames.Genre</span>
+        </dd>
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Videogames.ReleaseYear)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Videogames.ReleaseYear)
+        </dd>
+    </dl>
+
+    <form method="post" class="mt-3 d-flex gap-2">
+        <input type="hidden" asp-for="Videogames.Id" />
+        <input type="submit" value="Eliminar" class="btn btn-danger" />
+        <a asp-page="./Index" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+</div>

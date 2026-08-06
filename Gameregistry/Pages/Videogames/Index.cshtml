@@ -1,0 +1,38 @@
+@page
+@model Gameregistry.Pages.Videogames.IndexModel
+
+@{
+    ViewData["Title"] = "Videojuegos";
+}
+
+<div class="page-header">
+    <h1>Videojuegos</h1>
+    <a asp-page="Create" class="btn btn-primary">+ Nuevo videojuego</a>
+</div>
+
+@if (!Model.Videogames.Any())
+{
+    <div class="empty-state">
+        <p>Todavía no hay videojuegos cargados.</p>
+        <a asp-page="Create" class="btn btn-primary">Cargar el primero</a>
+    </div>
+}
+else
+{
+    <div class="game-grid">
+        @foreach (var item in Model.Videogames)
+        {
+            <div class="game-card">
+                <span class="genre-badge">@item.Genre</span>
+                <h3>@item.Name</h3>
+                <div class="game-meta">@item.Publisher &middot; @item.ReleaseYear</div>
+                <p class="game-description">@item.Description</p>
+                <div class="game-actions">
+                    <a asp-page="./Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Detalles</a>
+                    <a asp-page="./Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Editar</a>
+                    <a asp-page="./Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                </div>
+            </div>
+        }
+    </div>
+}
