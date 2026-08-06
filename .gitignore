@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Reportes y capturas generados por dotnet test (ExtentReports)
+GameregistryTests/Reportes/
+GameregistryTests/Capturas/
+
 # User-specific files
 *.rsuser
 *.suo

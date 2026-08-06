@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Gameregistry/Gameregistry.csproj" />
+  <Project Path="GameregistryTests/GameregistryTests.csproj" />
+</Solution>

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using AventStack.ExtentReports;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
@@ -22,6 +23,7 @@ namespace GameregistryTests
 
         private IWebDriver _driver = null!;
         private WebDriverWait _wait = null!;
+        private ExtentTest _extentTest = null!;
 
         // Estos tests pegan con Selenium contra un servidor HTTP real, no contra un
         // TestServer en memoria: sin esto, "dotnet test" fallaria con ERR_CONNECTION_REFUSED
@@ -112,6 +114,11 @@ namespace GameregistryTests
         [SetUp]
         public void SetUp()
         {
+            // Se crea el nodo del reporte al arrancar la prueba (no en TearDown) para que
+            // la duracion que muestra ExtentReports incluya el tiempo real de la prueba,
+            // no solo el tramo posterior a que termino de correr.
+            _extentTest = ExtentReportSetup.Extent.CreateTest(TestContext.CurrentContext.Test.Name);
+
             var options = new ChromeOptions();
             options.AddArgument("--window-size=1280,800");
 
@@ -122,8 +129,67 @@ namespace GameregistryTests
         [TearDown]
         public void TearDown()
         {
+            var resultado = TestContext.CurrentContext.Result;
+            var estado = resultado.Outcome.Status;
+
+            // Requisito: captura de pantalla de CADA escenario, no solo de los que fallan.
+            // Se toma antes de _driver.Quit(): una vez cerrado el browser ya no hay nada
+            // que capturar.
+            var rutaCaptura = GuardarCapturaDePantalla(TestContext.CurrentContext.Test.Name, estado);
+
+            switch (estado)
+            {
+                case NUnit.Framework.Interfaces.TestStatus.Failed:
+                    _extentTest.Fail(resultado.Message ?? "La prueba fallo.");
+                    break;
+                case NUnit.Framework.Interfaces.TestStatus.Skipped:
+                    _extentTest.Skip(resultado.Message ?? "La prueba fue omitida.");
+                    break;
+                default:
+                    _extentTest.Pass("La prueba paso correctamente.");
+                    break;
+            }
+
+            // Se adjunta despues del Pass/Fail/Skip para que la miniatura quede como el
+            // ultimo log del nodo, junto al veredicto final de la prueba.
+            if (rutaCaptura is not null)
+            {
+                _extentTest.AddScreenCaptureFromPath(rutaCaptura, "Captura al finalizar la prueba");
+            }
+
             _driver.Quit();
             _driver.Dispose();
+        }
+
+        // Guarda una captura de pantalla del estado del browser al finalizar la prueba (haya
+        // pasado, fallado o sido omitida) en la carpeta Capturas del proyecto, para poder
+        // enlazarla/mostrarla como miniatura desde el reporte HTML. El nombre de archivo
+        // incluye el nombre de la prueba y su resultado para poder identificarla a simple
+        // vista dentro de la carpeta. Si la captura falla (p.ej. el driver ya no responde),
+        // no debe tapar el resultado real de la prueba, por eso solo se registra y se sigue.
+        private string? GuardarCapturaDePantalla(string nombrePrueba, NUnit.Framework.Interfaces.TestStatus estado)
+        {
+            try
+            {
+                var nombreArchivo = $"{nombrePrueba}_{estado}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                var rutaCompleta = Path.Combine(ExtentReportSetup.CapturasDir, nombreArchivo);
+
+                ((ITakesScreenshot)_driver).GetScreenshot().SaveAsFile(rutaCompleta);
+
+                // Se le pasa al reporte una ruta RELATIVA (Reportes y Capturas son carpetas
+                // hermanas dentro del proyecto), no la ruta absoluta del disco: asi el HTML
+                // sigue mostrando las imagenes aunque se mueva o se copie la carpeta del
+                // proyecto a otra maquina, en vez de depender de este path exacto.
+                var reportesDir = Path.GetDirectoryName(ExtentReportSetup.ReportPath)!;
+                var rutaRelativa = Path.GetRelativePath(reportesDir, rutaCompleta).Replace('\\', '/');
+
+                return rutaRelativa;
+            }
+            catch (Exception ex)
+            {
+                TestContext.Progress.WriteLine($"No se pudo guardar la captura de pantalla: {ex.Message}");
+                return null;
+            }
         }
 
         // Corregido: el login exitoso sin ReturnUrl redirige a "/Index" (home), no al
